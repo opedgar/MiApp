@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">MiApp</string>
+    <string name="not_login">No se pudo iniciar sesión</string>
+    <string name="not_logout">No se pudo cerrar sesión</string>
+</resources>
