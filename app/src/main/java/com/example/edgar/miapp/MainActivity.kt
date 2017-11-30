@@ -19,6 +19,8 @@ import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.common.api.OptionalPendingResult
 import com.google.android.gms.common.api.Result
 import com.google.android.gms.common.api.ResultCallback
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 
 class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedListener {
 
@@ -28,6 +30,9 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
     lateinit var idTextView:TextView
 
     lateinit var googleApiClient:GoogleApiClient
+
+    lateinit var firebaseAuth:FirebaseAuth
+    lateinit var firebaseAuthListener:FirebaseAuth.AuthStateListener
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,34 +51,29 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
                 .enableAutoManage(this, this)
                 .addApi(Auth.GOOGLE_SIGN_IN_API, gso)
                 .build()
+
+        firebaseAuth = FirebaseAuth.getInstance()
+        firebaseAuthListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+            var user = firebaseAuth.currentUser
+            if (user!=null){
+                setUserData(user)
+            }else{
+                goLoginScreen()
+            }
+        }
+    }
+
+    private fun setUserData(user: FirebaseUser) {
+        nameTextView.setText(user.displayName)
+        emailTextView.setText(user.email)
+        idTextView.setText(user.uid)
+        Glide.with(this).load(user.photoUrl).into(photoImageView)
     }
 
     override fun onStart() {
         super.onStart()
 
-        var opr = Auth.GoogleSignInApi.silentSignIn(googleApiClient)
-        if (opr.isDone){
-            var result = opr.get()
-            handleSignInResult(result);
-        }else {
-            opr.setResultCallback { googleSignInResult -> handleSignInResult(googleSignInResult)}
-        }
-    }
-
-    private fun handleSignInResult(result: GoogleSignInResult) {
-        if (result.isSuccess){
-            val account = result.signInAccount
-
-            nameTextView.setText(account?.displayName)
-            emailTextView.setText(account?.email)
-            idTextView.setText(account?.id)
-
-            Glide.with(this)
-                    .load(account?.photoUrl)
-                    .into(photoImageView)
-        } else {
-            goLoginScreen()
-        }
+        firebaseAuth.addAuthStateListener(firebaseAuthListener)
     }
 
     private fun goLoginScreen() {
@@ -83,6 +83,8 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
     }
 
     fun logOut(view: View) {
+        firebaseAuth.signOut()
+
         Auth.GoogleSignInApi.signOut(googleApiClient).setResultCallback { status ->
             if (status.isSuccess){
                 goLoginScreen()
@@ -93,6 +95,8 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
     }
 
     fun revoke(view:View) {
+        firebaseAuth.signOut()
+
         Auth.GoogleSignInApi.revokeAccess(googleApiClient).setResultCallback { status ->
             if (status.isSuccess){
                 goLoginScreen()
@@ -104,5 +108,13 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
 
     override fun onConnectionFailed(p0: ConnectionResult) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun onStop() {
+        super.onStop()
+
+        if (firebaseAuthListener!=null){
+            firebaseAuth.removeAuthStateListener(firebaseAuthListener)
+        }
     }
 }

@@ -62,7 +62,6 @@
         android:text="REVOKE"
         style="@style/Widget.AppCompat.Button.Borderless"
         android:onClick="revoke"
-        android:layout_marginBottom="15dp
-"/>
+        android:layout_marginBottom="15dp"/>
 
 </LinearLayout>
